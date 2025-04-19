@@ -1,0 +1,66 @@
+if __name__ == '__main__':
+    # Initialize core components
+    agent_registry = AgentRegistry()
+    task_orchestrator = TaskOrchestrator(agent_registry)
+    delegation_tree = DelegationTree()
+    command_center = CommandCenter(agent_registry, delegation_tree, task_orchestrator)
+
+    # Create and register agents
+    agent1 = BaseAgent("Data Analyst", ["data_analysis", "reporting"], access_level=2)
+    agent2 = WebResearcher(["web_scraping", "data_extraction"], access_level=1)
+    agent3 = BaseAgent("Report Writer", ["report_generation"], access_level=3)
+    AgentRegistry.register(agent1)
+    AgentRegistry.register(agent2)
+    AgentRegistry.register(agent3)
+
+    # Start the task orchestrator in a separate thread
+    orchestrator_thread = threading.Thread(target=task_orchestrator.run, daemon=True)
+    orchestrator_thread.start()
+
+    # Submit some initial tasks
+    task1_id = command_center.submit_task("data_analysis", {"data_source": "file1.csv"}, priority=8)
+    task2_id = command_center.submit_task("web_scraping", {"url": "https://books.toscrape.com/", "target": "books"}, priority=6, parent_id=task1_id)
+    task3_id = command_center.submit_task("report_generation", {"data": [1, 2, 3]}, deadline=datetime.now() + timedelta(minutes=30))
+
+    # --- Example of adding to memory and querying (for demonstration) ---
+    agent1.add_to_memory("Agent systems are fascinating!")
+    agent1.add_to_memory("ChromaDB is used for vector embeddings and memory.")
+    query_results_agent1 = agent1.query_memory("What is ChromaDB?")
+    print(f"\nQuery results for Agent 1 (query: 'What is ChromaDB?'):")
+    if query_results_agent1:
+        for doc in query_results_agent1:
+            print(f"- {doc}")
+    else:
+        print("- No relevant memories found.")
+
+    # --- Save and Load Example ---
+    agent_registry.save_agents("saved_agents.pkl")
+    command_center.save_state("system_state.pkl")
+
+    # Create a *NEW* orchestrator for the loaded state
+    loaded_task_orchestrator = TaskOrchestrator(AgentRegistry())  # New instance!
+    loaded_command_center = CommandCenter.load_state("system_state.pkl", loaded_task_orchestrator)
+    loaded_orchestrator_thread = threading.Thread(target=loaded_task_orchestrator.run, daemon=True)
+    loaded_orchestrator_thread.start()
+
+
+    # --- Interact with the system (after a short delay) ---
+    time.sleep(5)  # Wait for some processing
+    print(f"Task 1 status: {command_center.get_task_status(task1_id)}")
+    print(f"Agent 1 status: {command_center.get_agent_status(agent1.id)}")
+    print(f"Agent 2 status: {command_center.get_agent_status(agent2.id)}")
+    task2_details = command_center.get_task_details(task2_id)
+    if task2_details and task2_details.get("result"):
+        print(f"\nScraped Data (Task 2 Result):\n{task2_details['result']}")
+
+    # Demonstrate task cancellation
+    command_center.cancel_task(task2_id)
+    print(command_center.get_task_details(task2_id))
+
+    # Show task hierarchy
+    print(command_center.get_task_hierarchy(task1_id))
+
+    # --- Shutdown ---
+    command_center.shutdown()
+    loaded_command_center.shutdown()
+    print("System shutdown complete.")
