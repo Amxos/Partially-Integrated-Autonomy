@@ -1,5 +1,5 @@
 
-```markdown
+
 # Partially Integrated Autonomy (P.I.A)
 
 ## Overview
@@ -75,4 +75,4 @@ mann just help out man we all gone go up anyways so if u think you can, you migh
 (Add license information here)
 ```
 
-This README focuses solely on v0.5's characteristics as you requested, drawing directly from the provided sources. Let me know if you'd like any modifications or further details added.
+
